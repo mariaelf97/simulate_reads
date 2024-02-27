@@ -1,10 +1,4 @@
 #!/bin/bash
-# combine whole genome sequence of isolates with different lineages (L1~L4) to a multifasta file
-/home/mahmadi/tb_seqs/L1/GCA_030576955.1_ASM3057695v1_genomic.fna >> /home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta
-/home/mahmadi/tb_seqs/L2/GCA_030568815.1_ASM3056881v1_genomic.fna >> /home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta
-/home/mahmadi/tb_seqs/L3/GCA_030568355.1_ASM3056835v1_genomic.fna >> /home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta
-/home/mahmadi/tb_seqs/L4/GCA_030572955.1_ASM3057295v1_genomic.fna >> /home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta
-
 # simulate reads using grinder
 # -rf reference genome to simulate reads from
 # -rs random seed to make sure the result is reproducible
@@ -21,8 +15,7 @@
 # -fq provide output in fastq format
 # -ql generate basic quality scores for the simulated reads
 # Introduce sequencing errors in the reads under the form of homopolymeric stretches with Balzer model
-grinder -rf /home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta -rs 10 -cf 300 -rd 300 uniform 10 \
--fr /home/mahmadi/tb_seqs/primers/primer.fastq -cb 1 -lb 0 -md poly4 3e-3 3.3e-8 -fq 1 -ql 30 20 -hd Balzer
-
-
-
+for FILE in $(cat /home/mahmadi/tb_seqs/primers/primer_names.txt)
+do
+grinder -rf /home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta -rs 10 -cf 300 -rd 300 uniform 10 -fr /home/mahmadi/tb_seqs/primers/primer_pairs_fastq/$FILE -cb 1 -lb 0 -md poly4 3e-3 3.3e-8 -fq 1 -ql 30 20 -od /home/mahmadi/tb_seqs/seq_simulation/grinder/$FILE -hd Balzer
+done
