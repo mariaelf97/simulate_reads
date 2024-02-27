@@ -1,0 +1,15 @@
+PRIMERS = [i for i in open("primers.txt").read().split('\n') if len(i) >0]
+
+PREFIX = "midterm1"
+
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{primer}/grinder-reads.fastq", primer=PRIMERS)
+rule simulate_reads:
+    input:
+        reference="/home/mahmadi/tb_seqs/seq_simulation/all_seqs.fasta",
+        primer="/home/mahmadi/tb_seqs/primers/primer_pairs_fastq/{primer}"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{primer}"
+    shell:
+        """grinder -rf {input.reference} -rs 10 -cf 300 -rd 300 uniform 10 -fr {input.primer} -cb 1 -lb 0 -md poly4 3e-3 3.3e-8 -fq 1 -ql 30 20 -od {output} -hd Balzer"""
