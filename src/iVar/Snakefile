@@ -1,0 +1,112 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/isolates.txt").read().split('\n') if len(i) >0]
+
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.sam", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.bam", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam.bai", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs.bam", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/variants.tsv", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/depths", isolate= ISOLATES),
+
+rule minimap2_sam:
+    input:
+        target="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta",  # can be either genome index or genome fasta
+        query="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs.fastq"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.sam"
+    conda:
+        "minimap"
+    shell:
+        """minimap2 -a {input.target} {input.query} > {output} """
+rule sam2bam:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.sam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools view -bS {input} > {output} """
+
+rule sort_bam:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.bam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools sort -o {output} {input} """
+
+rule index_bam:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam.bai"
+    conda:
+        "freyja"
+    shell:
+        """samtools index {input} """
+rule remove_adapters:
+    input:
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam",
+        primer="/home/mahmadi/tb_seqs/primers/primer.bed"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs.bam"
+    conda:
+        "freyja"
+    params:
+       pfx = "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs"
+    shell:
+        """ivar trim -b {input.primer} -p {params.pfx} -i {input.bam_file} -q 15 -m 50 -s 4 -e"""
+rule run_ivar:
+    input:
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs.bam",
+        reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
+    output:
+        variants="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/variants.tsv",
+        depths="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/depths"
+    conda:
+        "freyja"
+    params:
+       vrt = "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/variants",
+       dpt = "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/depths"
+    shell:
+        """freyja variants {input.bam_file} --variants {params.vrt}  --depths {params.dpt} --ref {input.reference}"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
