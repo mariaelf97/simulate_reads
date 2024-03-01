@@ -14,7 +14,7 @@ def bed_to_fastq(bed_file, output_fastq):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Write output to a file')
+    parser = argparse.ArgumentParser(description='change a bed file to a fastq format file')
     parser.add_argument('-o', '--output', help='Output file path', required=True)
     parser.add_argument('-p', '--primers_bed', help='bed formatted primer file', required=True)
     args = parser.parse_args()
