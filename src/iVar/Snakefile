@@ -7,6 +7,7 @@ rule all:
         expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam", isolate= ISOLATES),
         expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/all_seqs_aln.soretd.bam.bai", isolate= ISOLATES),
         expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs.bam", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs_sorted.bam", isolate= ISOLATES),
         expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/variants.tsv", isolate= ISOLATES),
         expand("/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/depths", isolate= ISOLATES),
 
@@ -61,9 +62,19 @@ rule remove_adapters:
        pfx = "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs"
     shell:
         """ivar trim -b {input.primer} -p {params.pfx} -i {input.bam_file} -q 15 -m 50 -s 4 -e"""
+rule sort_index:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs.bam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs_sorted.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools sort -o {output} {input} && samtools index {output} """
+
 rule run_ivar:
     input:
-        bam_file="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs.bam",
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/trimmed_seqs_sorted.bam",
         reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
     output:
         variants="/home/mahmadi/tb_seqs/seq_simulation/grinder/{isolate}/variants.tsv",
