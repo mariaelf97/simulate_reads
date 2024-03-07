@@ -1,0 +1,43 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/isolates.txt").read().split('\n') if len(i) >0]
+PRIMERS = [i for i in open("/home/mahmadi/tb_seqs/primers/primer_pair_names.txt").read().split('\n') if len(i) >0]
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/{isolate}/{primer}.fasta", isolate= ISOLATES, primer=PRIMERS)
+
+rule create_primer:
+    input:
+        genome="/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/{isolate}/{isolate}.fasta",
+        primer="/home/mahmadi/tb_seqs/primers/primer_pairs_fastq/{primer}"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/{isolate}/{primer}.fasta"
+    shell:
+        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/make_amplicons.py -g {input.genome} -f {input.primer} -o {output} -p {wildcards.primer}"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
