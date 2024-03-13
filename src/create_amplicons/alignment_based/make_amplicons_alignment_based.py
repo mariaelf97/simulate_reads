@@ -1,5 +1,6 @@
 ## Code credit to SWAMPy : https://github.com/goldman-gp-ebi/SWAMPy
 import subprocess
+import os
 from os.path import join, basename
 from io import StringIO
 from Bio import SeqIO
@@ -7,17 +8,23 @@ import pandas as pd
 import logging
 
 
-def build_index(genome_path, genome_filename_short, indices_folder):
+def build_index(genome_path, output):
     # create bowtie2 index for the reference
+    directory="indices"
+    path = join(output, directory)
+    if not os.path.exists(path):
+        os.makedirs(path)
     subprocess.run([
-        "bowtie2-build", genome_path, join(indices_folder, genome_filename_short)], stdout=subprocess.DEVNULL)
+        "bowtie2-build", genome_path, path, "-o",path], capture_output=True)
 
 
-def align_primers(genome_path, genome_filename_short, indices_folder, primers_files, verbose):
+def align_primers(genome_filename_short,output, primers_files, verbose):
     # run bowtie2 aligner
+    directory="indices"
+    path = os.path.join(output, directory)
     alignment = subprocess.run(
         ["bowtie2",
-         "-x", join(indices_folder, genome_filename_short),
+         "-x", path,
          "-U", primers_files], capture_output=True)
 
     alignment = StringIO(alignment.stdout.decode("UTF-8"))
@@ -77,7 +84,7 @@ def align_primers(genome_path, genome_filename_short, indices_folder, primers_fi
     return df
 
 
-def write_amplicon(df, reference, genome_filename_short, amplicons_folder, verbose=False):
+def write_amplicon(df, reference, genome_filename_short, output, verbose=False):
     for r in df.itertuples():
         amplicon_number = r.amplicon_number
         alt = r.is_alt
@@ -89,8 +96,11 @@ def write_amplicon(df, reference, genome_filename_short, amplicons_folder, verbo
             logging.info("length: " + str(r.right - r.left))
             logging.info(amplicon + "\n")
             logging.info(r.left_primer + "-" * (r.right - r.left - r.left_primer_length) + r.right_primer + "\n")
-
-        with open(f"{amplicons_folder}/{genome_filename_short}_amplicon_{amplicon_number}" + (
+        directory = "amplicons"
+        path = join(output, directory)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        with open(f"{path}/{genome_filename_short}_amplicon_{amplicon_number}" + (
         "_alt" if alt else "") + ".fasta", "w") as f:
 
             f.write(f">{reference.id}_amplicon_{amplicon_number}" + ("_alt" if alt else "") + "\n")
@@ -102,8 +112,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Create amplicons for a genome using a primer set.")
     parser.add_argument("--genome_path", "-g", help="Path to the genome of interest.")
-    parser.add_argument("--amplicons_folder", "-am", help="Folder where the output amplicons will go.")
-    parser.add_argument("--indices_folder", "-i", help="Folder where bowtie2 indices are created and stored.")
+    parser.add_argument("--output", "-o", help="Folder where the output will go")
     parser.add_argument("--primers_file", "-p", help="Path to fastq file of primers. Default ARTIC V1 primers.")
     parser.add_argument("--verbose", help="Verbose mode.")
 
@@ -111,6 +120,6 @@ if __name__ == "__main__":
     genome_filename_short = ".".join(basename(args.genome_path).split(".")[:-1])
     reference = SeqIO.read(args.genome_path, format="fasta")
 
-    build_index(args.genome_path, genome_filename_short, args.indices_folder)
-    df = align_primers(args.genome_path, genome_filename_short, args.indices_folder, args.primers_file, args.verbose)
-    write_amplicon(df, reference, genome_filename_short, args.amplicons_folder, verbose=args.verbose)
+    build_index(args.genome_path, args.output)
+    df = align_primers(genome_filename_short, args.output, args.primers_file, verbose=args.verbose)
+    write_amplicon(df, reference, genome_filename_short, args.output, verbose=args.verbose)
