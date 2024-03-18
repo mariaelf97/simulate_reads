@@ -1,5 +1,5 @@
 import argparse
-
+from pathlib import Path
 from Bio import SeqIO
 
 
@@ -10,7 +10,8 @@ def split_primer_files(fastq_file,output):
         for i in range(0, len(records), 2):
             record1 = records[i]
             primer_name = record1.id
-            output_path = output + primer_name.split("_")[1]
+            Path(output).mkdir(parents=True, exist_ok=True)
+            output_path = output + primer_name.split("_")[1] + ".fastq"
             with open(output_path, "w") as output_handle:
                 SeqIO.write(record1, output_handle, "fastq")
                 if i + 1 < len(records):
@@ -23,7 +24,7 @@ def main():
     parser.add_argument('-i', '--input', help='fastq file containing all primers', required=True)
     parser.add_argument('-o', '--output', help='output path for the location to save primer files', required=True)
     args = parser.parse_args()
-    split_primer_files(args.input)
+    split_primer_files(args.input, args.output)
 
 
 if __name__ == "__main__":
