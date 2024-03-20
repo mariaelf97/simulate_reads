@@ -55,6 +55,16 @@ import re
 primerL = amp68_L.iloc[0,6]
 primerR = str(Seq(amp68_R.iloc[0,6]).reverse_complement())
 #check for repeats 
-print([m.start() for m in re.finditer(primerL,refseq)])
-print([m.start() for m in re.finditer(primerR,refseq)])
+print('68 Left',[m.start() for m in re.finditer(primerL,refseq)])
+print('68 Right',[m.start() for m in re.finditer(primerR,refseq)])
 
+
+#how does amp 44 look? 
+amp44_L = bed_df[bed_df.iloc[:,3].str.contains('44') & bed_df.iloc[:,3].str.contains('LEFT')]
+amp44_R = bed_df[bed_df.iloc[:,3].str.contains('44') & bed_df.iloc[:,3].str.contains('RIGHT')]
+
+primerL = amp44_L.iloc[0,6]
+primerR = str(Seq(amp44_R.iloc[0,6]).reverse_complement())
+#check for repeats 
+print('44 Left',[m.start() for m in re.finditer(primerL,refseq)])
+print('44 Right',[m.start() for m in re.finditer(primerR,refseq)])
