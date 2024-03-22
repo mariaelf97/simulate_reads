@@ -6,6 +6,7 @@ from io import StringIO
 from Bio import SeqIO
 import pandas as pd
 import logging
+import sys
 
 
 def build_index(genome_path, output):
@@ -15,7 +16,7 @@ def build_index(genome_path, output):
     if not os.path.exists(path):
         os.makedirs(path)
     subprocess.run([
-        "bowtie2-build", genome_path, path, "-o",path], capture_output=True)
+        "bowtie2-build", genome_path, path], capture_output=True)
 
 
 def align_primers(genome_filename_short,output, primers_files, verbose):
@@ -26,27 +27,22 @@ def align_primers(genome_filename_short,output, primers_files, verbose):
         ["bowtie2",
          "-x", path,
          "-U", primers_files], capture_output=True)
-
     alignment = StringIO(alignment.stdout.decode("UTF-8"))
 
+
     # read alignment data as a dataframe
-    df = pd.read_csv(alignment, sep="\t", skiprows=[0, 1, 2], header=None, names=[i for i in range(20)])
+    df = pd.read_csv(alignment, sep="\t", header=None, names=[i for i in range(20)],comment ="@")
     df = pd.DataFrame(df[[0, 2, 3, 9]])
     df = df.rename(columns={0: "name", 2: "ref", 3: "start", 9: "seq"})
-
-    # split the column "name" to extract useful data
-    df["seq_len"] = df["seq"].apply(len)
+# split the column "name" to extract useful data
+    df["seq_len"] = df["seq"].str.len()
     df["amplicon_number"] = df["name"].apply(lambda x: int(x.split("_")[1]))
     df["handedness"] = df["name"].apply(lambda x: x.split("_")[2])
     df["is_alt"] = df["name"].apply(lambda x: len(x.split("_")) > 3)
-
     # remove rows where the alignment mismatched
     drop_rows = []
     for r in df.itertuples():
         if r.ref == "*":
-            if verbose:
-                logging.info(f"Dropping amplicon {r.amplicon_number}, couldn't find a match for the primer {r.seq}")
-
             drop_rows.append(r.Index)
 
     df.drop(drop_rows, inplace=True)
@@ -73,16 +69,16 @@ def align_primers(genome_filename_short,output, primers_files, verbose):
         "start_y": "right",
         "seq_y": "right_primer",
         "seq_len_y": "right_primer_length"})
+    if len(df) == 0:
+        sys.exit(0)
+    else:
+        df["amplicon_filepath"] = str(genome_filename_short) + "_amplicon_" + df["amplicon_number"].map(str) + df["is_alt"].map(
+                lambda x: "_alt" if x else "") + ".fasta"
 
-    df["amplicon_filepath"] = genome_filename_short + "_amplicon_" + df["amplicon_number"].map(str) + df["is_alt"].map(
-        lambda x: "_alt" if x else "") + ".fasta"
-
-    if verbose:
-        logging.info("First 5 rows: ")
-        logging.info(df.head())
-
-    return df
-
+        if verbose:
+            logging.info("First 5 rows: ")
+            logging.info(df.head())
+        return df
 
 def write_amplicon(df, reference, genome_filename_short, output, verbose=False):
     for r in df.itertuples():
@@ -118,8 +114,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     genome_filename_short = ".".join(basename(args.genome_path).split(".")[:-1])
-    reference = SeqIO.read(args.genome_path, format="fasta")
-
+    reference = next(SeqIO.parse(args.genome_path, "fasta"))
     build_index(args.genome_path, args.output)
     df = align_primers(genome_filename_short, args.output, args.primers_file, verbose=args.verbose)
     write_amplicon(df, reference, genome_filename_short, args.output, verbose=args.verbose)
