@@ -1,19 +1,23 @@
-ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/isolates.txt").read().split('\n') if len(i) >0]
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/gut_microbiome/isolates.txt").read().split('\n') if len(i) >0]
+
 rule all:
     input:
-        expand("/home/mahmadi/tb_seqs/seq_simulation/swampy/{isolate}", isolate= ISOLATES)
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/gut_microbiome/alignment_approach/primer_V1/{isolate}", isolate= ISOLATES)
 
 rule create_amplicon:
     input:
-        genome="/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/{isolate}/{isolate}.fasta",
+        genome="/home/mahmadi/tb_seqs/gut_microbiome/{isolate}.fna",
         primer="/home/mahmadi/tb_seqs/primers/primer.fastq"
     output:
-        directory("/home/mahmadi/tb_seqs/seq_simulation/swampy/{isolate}")
+        directory("/home/mahmadi/tb_seqs/seq_simulation/amplicons/gut_microbiome/alignment_approach/primer_V1/{isolate}")
     conda:
         "swampy"
     shell:
         """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/alignment_based/make_amplicons_alignment_based.py\
          -g {input.genome} -o {output} -p {input.primer} --verbose VERBOSE"""
+
+
+
 
 
 
