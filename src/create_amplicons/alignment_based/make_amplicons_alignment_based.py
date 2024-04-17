@@ -11,21 +11,15 @@ import sys
 
 def build_index(genome_path, output):
     # create bowtie2 index for the reference
-    directory="indices"
-    path = join(output, directory)
-    if not os.path.exists(path):
-        os.makedirs(path)
     subprocess.run([
-        "bowtie2-build", genome_path, path], capture_output=True)
+        "bowtie2-build", genome_path, output], capture_output=True)
 
 
 def align_primers(genome_filename_short,output, primers_files, verbose):
     # run bowtie2 aligner
-    directory="indices"
-    path = os.path.join(output, directory)
     alignment = subprocess.run(
         ["bowtie2",
-         "-x", path,
+         "-x", output,
          "-U", primers_files], capture_output=True)
     alignment = StringIO(alignment.stdout.decode("UTF-8"))
 
@@ -92,11 +86,9 @@ def write_amplicon(df, reference, genome_filename_short, output, verbose=False):
             logging.info("length: " + str(r.right - r.left))
             logging.info(amplicon + "\n")
             logging.info(r.left_primer + "-" * (r.right - r.left - r.left_primer_length) + r.right_primer + "\n")
-        directory = "amplicons"
-        path = join(output, directory)
-        if not os.path.exists(path):
-            os.makedirs(path)
-        with open(f"{path}/{genome_filename_short}_amplicon_{amplicon_number}" + (
+        if not os.path.exists(output):
+            os.makedirs(output)
+        with open(f"{output}/{genome_filename_short}_amplicon_{amplicon_number}" + (
         "_alt" if alt else "") + ".fasta", "w") as f:
 
             f.write(f">{reference.id}_amplicon_{amplicon_number}" + ("_alt" if alt else "") + "\n")
