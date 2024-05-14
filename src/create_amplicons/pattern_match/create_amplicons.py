@@ -25,16 +25,6 @@ def make_amplicon(left_primer_loc,right_primer_loc,
     return amplicon
 
 
-def write_amplicon(left_primer_loc,right_primer_loc,
-                  alt_left_primer_loc, alt_right_primer_loc,
-                  primer_seq_y, reference,amplicon_number,output):
-    amplicon = make_amplicon(left_primer_loc,right_primer_loc,
-                  alt_left_primer_loc, alt_right_primer_loc,
-                  primer_seq_y, reference)
-    """function to write amplicons to a fasta file"""
-
-
-
 def main():
     parser = argparse.ArgumentParser(description="Create amplicons for a genome using a primer set.")
     parser.add_argument("--genome_path", "-g", help="Path to the genome of interest.")
