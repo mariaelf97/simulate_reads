@@ -2,17 +2,17 @@ ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assembli
 
 rule all:
     input:
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/assessment.csv",isolate = ISOLATES)
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons",isolate = ISOLATES)
 rule create_amplicon:
     input:
         genome="/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/{isolate}/{isolate}.fna",
         primer="/home/mahmadi/tb_seqs/primers/primer_v2.bed"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/assessment.csv"
+        directory("/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons")
     conda:
         "swampy"
     shell:
-        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/hybrid/hybrid_amplicon_extraction.py\
+        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/pattern_match/create_amplicons.py\
          -g {input.genome} -o {output} -p {input.primer}"""
 
 

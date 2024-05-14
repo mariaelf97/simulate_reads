@@ -4,40 +4,38 @@ from Bio import SeqIO
 import pandas as pd
 from Bio.Seq import Seq
 from regex import regex
+import argparse
 
 
-def find_closest_match(pattern):
+def find_closest_match(pattern,reference_seq):
+    """function to find a string allowing up to 3 mismatches"""
     for m in regex.finditer(r"\L<primer_string>{s<=2}",
                             reference_seq, primer_string=[pattern]):
         return m.start()
 
 
-def make_amplicon(left_primer_loc,right_primer_loc, alt_left_primer_loc, alt_right_primer_loc,primer_seq_y, reference):
+def make_amplicon(left_primer_loc,right_primer_loc,
+                  alt_left_primer_loc, alt_right_primer_loc,
+                  primer_seq_y, reference):
+    """function to create amplicons based on the string match location"""
     if left_primer_loc == "-1" or right_primer_loc == "-1":
         amplicon = reference[alt_left_primer_loc - 1: alt_right_primer_loc + len(primer_seq_y)]
     else:
         amplicon = reference[left_primer_loc - 1: right_primer_loc + len(primer_seq_y)]
-    return len(amplicon)
+    return amplicon
 
 
-# def write_amplicon(df, reference, genome_filename_short, output):
-#     reference_seq = str(reference.seq)
-#     for r in df.itertuples():
-#         amplicon_number = r.amplicon_number
-#         if r.left_primer_loc == "-1" or r.right_primer_loc == "-1":
-#             amplicon = reference_seq[r.alt_left_primer_loc - 1: r.alt_right_primer_loc + len(r.primer_seq_y)]
-#         else:
-#             amplicon = reference_seq[r.left_primer_loc - 1: r.right_primer_loc + len(r.primer_seq_y)]
-#         if not os.path.exists(output):
-#             os.makedirs(output)
-#         with open(f"{output}/{genome_filename_short}_amplicon_{amplicon_number}" + ".fasta", "w") as f:
-#             f.write(f">{reference.id}_amplicon_{amplicon_number}" + "\n")
-#             f.write(amplicon + "\n\n")
+def write_amplicon(left_primer_loc,right_primer_loc,
+                  alt_left_primer_loc, alt_right_primer_loc,
+                  primer_seq_y, reference,amplicon_number,output):
+    amplicon = make_amplicon(left_primer_loc,right_primer_loc,
+                  alt_left_primer_loc, alt_right_primer_loc,
+                  primer_seq_y, reference)
+    """function to write amplicons to a fasta file"""
 
 
-if __name__ == "__main__":
-    import argparse
 
+def main():
     parser = argparse.ArgumentParser(description="Create amplicons for a genome using a primer set.")
     parser.add_argument("--genome_path", "-g", help="Path to the genome of interest.")
     parser.add_argument("--output", "-o", help="Folder where the output will go")
@@ -64,19 +62,28 @@ if __name__ == "__main__":
     failed_amplicons = pd.concat([merged_df[merged_df['amplicon_length']>2000],
                                  merged_df[merged_df['amplicon_length'] == 0],
                                   merged_df[merged_df['amplicon_length'] < 0]])
-    failed_amplicons["alt_left_primer_loc"] = failed_amplicons.apply(lambda row: find_closest_match(row["primer_seq_x"]), axis=1)
-    failed_amplicons["alt_right_primer_loc"] = failed_amplicons.apply(lambda row: find_closest_match(str(row["comp_rev"])), axis=1)
+    failed_amplicons["alt_left_primer_loc"] = failed_amplicons.apply(lambda row: find_closest_match(row["primer_seq_x"],reference_seq), axis=1)
+    failed_amplicons["alt_right_primer_loc"] = failed_amplicons.apply(lambda row: find_closest_match(str(row["comp_rev"]),reference_seq), axis=1)
     merged_df = pd.merge(
         merged_df,
         failed_amplicons[["amplicon_number","alt_left_primer_loc","alt_right_primer_loc"]],
         on=["amplicon_number"],
         how="outer"
     )
-    merged_df["amplicon_length"] = merged_df.apply(lambda row: make_amplicon(row["left_primer_loc"],
+    merged_df["amplicon"] = merged_df.apply(lambda row: make_amplicon(row["left_primer_loc"],
                                                                           row["right_primer_loc"],
                                                                           row["alt_left_primer_loc"],
                                                                           row["alt_right_primer_loc"],
                                                                           row["primer_seq_y"],
                                                                           reference_seq), axis=1)
-    merged_df.to_csv(args.output, index=False)
-    #write_amplicon(merged_df, reference, genome_filename_short, args.output)
+
+    for row in merged_df.itertuples():
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
+        with open(f"{args.output}/amplicon_{row.amplicon_number}" + ".fasta", "w") as f:
+            f.write(f">{reference.id}_amplicon_{row.amplicon_number}" + "\n")
+            f.write(row.amplicon + "\n\n")
+
+
+if __name__ == "__main__":
+    main()
