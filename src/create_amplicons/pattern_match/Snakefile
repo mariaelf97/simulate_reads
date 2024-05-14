@@ -1,0 +1,44 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/isolates.txt").read().split('\n') if len(i) >0]
+
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/assessment.csv",isolate = ISOLATES)
+rule create_amplicon:
+    input:
+        genome="/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/{isolate}/{isolate}.fna",
+        primer="/home/mahmadi/tb_seqs/primers/primer_v2.bed"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/assessment.csv"
+    conda:
+        "swampy"
+    shell:
+        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/hybrid/hybrid_amplicon_extraction.py\
+         -g {input.genome} -o {output} -p {input.primer}"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

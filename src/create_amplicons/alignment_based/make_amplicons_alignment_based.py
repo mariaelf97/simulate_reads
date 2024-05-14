@@ -72,7 +72,7 @@ def align_primers(genome_filename_short,output, primers_files, verbose):
         if verbose:
             logging.info("First 5 rows: ")
             logging.info(df.head())
-        return df
+    return df
 
 def write_amplicon(df, reference, genome_filename_short, output, verbose=False):
     for r in df.itertuples():
