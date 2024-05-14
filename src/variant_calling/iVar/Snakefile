@@ -1,0 +1,136 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/comb_names.txt").read().split('\n') if len(i) >0]
+# ABUNDANCES = [i for i in open("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/mixed_samples/abundances.txt").read().split('\n') if len(i) >0]
+ISOLATES = [filename.replace(".fastq", "") for filename in ISOLATES]
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads.sam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads.bam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads_sorted.bam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads_sorted.bam.bai",  isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/trimmed_all_reads.bam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/{isolate}_variants.tsv", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/depths", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/{isolate}_freyja_demix_freschi", isolate = ISOLATES)
+
+rule minimap2_sam:
+    input:
+        target="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta",  # can be either genome index or genome fasta
+        query="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}.fastq"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads.sam"
+    conda:
+        "minimap"
+    shell:
+        """minimap2 -a {input.target} {input.query} > {output} """
+rule sam2bam:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads.sam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools view -bS {input} > {output} """
+
+rule sort_bam:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads.bam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads_sorted.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools sort -o {output} {input} """
+
+rule index_bam:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads_sorted.bam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads_sorted.bam.bai"
+    conda:
+        "freyja"
+    shell:
+        """samtools index {input} """
+rule remove_adapters:
+    input:
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/all_reads_sorted.bam",
+        primer="/home/mahmadi/tb_seqs/primers/primer_v2.bed"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/trimmed_all_reads.bam"
+    conda:
+        "freyja"
+    params:
+       pfx = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/trimmed_all_reads"
+    shell:
+        """ivar trim -b {input.primer} -p {params.pfx} -i {input.bam_file} -q 15 -m 50 -s 4 -e"""
+rule sort_index:
+    input:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/trimmed_all_reads.bam"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/trimmed_all_reads_sorted.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools sort -o {output} {input} && samtools index {output} """
+rule run_ivar:
+    input:
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/trimmed_all_reads_sorted.bam",
+        reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
+    output:
+        variants="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/variants.tsv",
+        depths="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/depths"
+    conda:
+        "freyja"
+    params:
+       vrt = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/{isolate}_variants.tsv",
+       dpt = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/depths"
+    shell:
+        """freyja variants {input.bam_file} --variants {params.vrt}  --depths {params.dpt} --ref {input.reference}"""
+
+rule run_demix:
+    input:
+        variants="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/{isolate}_variants.tsv",
+        depths="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/depths",
+        barcodes="/home/mahmadi/tb_seqs/lineage_barcodes/freschi_binary_matrix.csv"
+    output:
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/{isolate}/{isolate}_freyja_demix_freschi"
+    conda:
+        "freyja"
+    shell:
+        """freyja demix {input.variants} {input.depths} --output {output} --barcodes {input.barcodes}"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
