@@ -2,24 +2,24 @@ ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assembli
 
 rule all:
     input:
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/alignment_approach/primer_V2/{isolate}/all_amplicons_filtered.fasta",isolate = ISOLATES)
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons/all_amplicons_filtered.fasta",isolate = ISOLATES)
 rule combine_amplicons:
     input:
-        directory("/home/mahmadi/tb_seqs/seq_simulation/amplicons/alignment_approach/primer_V2/{isolate}")
+        directory("/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons")
     output:
         "/home/mahmadi/tb_seqs/seq_simulation/amplicons/alignment_approach/primer_V2/{isolate}/all_amplicons.fasta"
     shell:
-        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/alignment_based/combine_amplicons.py\
+        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/alignment_based/combine_filter_amplicons/combine_amplicons.py\
          -i {input} -o {output}"""
 
 rule filter_amplicons:
     input:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/alignment_approach/primer_V2/{isolate}/all_amplicons.fasta",
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons/all_amplicons.fasta",
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/alignment_approach/primer_V2/{isolate}/all_amplicons_filtered.fasta"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons/all_amplicons_filtered.fasta"
     conda:
         "freyja"
     shell:
-        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/alignment_based/filter_amplicons.py -i {input} -o {output}"""
+        """python /home/mahmadi/git_repos/simulate_reads/src/create_amplicons/alignment_based/combine_filter_amplicons/filter_amplicons.py -i {input} -o {output}"""
 
 

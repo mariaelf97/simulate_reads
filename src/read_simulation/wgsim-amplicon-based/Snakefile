@@ -1,18 +1,18 @@
 ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/isolates.txt").read().split('\n') if len(i) >0]
-ABUNDANCES = [i for i in open("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/mixed_samples_diff_cov/abundances.txt").read().split('\n') if len(i) >0]
+ABUNDANCES = [i for i in open("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/abundances.txt").read().split('\n') if len(i) >0]
 
 rule all:
     input:
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/{isolate}/{abundance}/reads_1.fastq",zip, isolate= ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/{isolate}/{abundance}/reads_2.fastq",zip, isolate= ISOLATES, abundance = ABUNDANCES)
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/{isolate}/{abundance}/reads_1.fastq", isolate= ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/{isolate}/{abundance}/reads_2.fastq", isolate= ISOLATES, abundance = ABUNDANCES)
 
 
 rule simulate_reads:
     input:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/alignment_approach/primer_V2/{isolate}/all_amplicons_filtered.fasta",
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicons/hybrid/primer_V2/{isolate}/amplicons/all_amplicons_filtered.fasta",
     output:
-       output1="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/{isolate}/{abundance}/reads_1.fastq",
-       output2="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/{isolate}/{abundance}/reads_2.fastq"
+       output1="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/{isolate}/{abundance}/reads_1.fastq",
+       output2="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/{isolate}/{abundance}/reads_2.fastq"
     conda:
         "wgsim"
     shell:
