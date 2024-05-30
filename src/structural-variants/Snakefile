@@ -1,0 +1,32 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/isolates.txt").read().split('\n') if len(i) >0]
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/structural-variants/{isolate}/out.delta", isolate= ISOLATES),
+        expand("/home/mahmadi/tb_seqs/structural-variants/{isolate}/OUT.Assemblytics_structural_variants.bed", isolate= ISOLATES)
+
+
+rule run_nucmer:
+    input:
+        reference = "/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta",
+        query = "/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/{isolate}/{isolate}.fna"
+    params:
+        "/home/mahmadi/tb_seqs/structural-variants/{isolate}/"
+    output:
+        "/home/mahmadi/tb_seqs/structural-variants/{isolate}/out.delta"
+    conda:
+        "mummer"
+    shell:
+        """cd {params} && nucmer -maxmatch -l 100 -c 500 {input.reference} {input.query}"""
+
+rule run_assemblytics:
+    input:
+        "/home/mahmadi/tb_seqs/structural-variants/{isolate}/out.delta"
+    params:
+        "/home/mahmadi/tb_seqs/structural-variants/{isolate}/"
+    output:
+        "/home/mahmadi/tb_seqs/structural-variants/{isolate}/OUT.Assemblytics_structural_variants.bed"
+    conda:
+        "assemblytics"
+    shell:
+        """cd {params} && Assemblytics {input} OUT 1000 50 10000"""
+
