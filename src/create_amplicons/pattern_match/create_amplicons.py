@@ -97,7 +97,7 @@ def main():
         if not os.path.exists(args.output):
             os.makedirs(args.output)
         with open(f"{args.output}/amplicon_{row.amplicon_number}_" + str(row.Index) + ".fasta", "w") as f:
-            f.write(f">{reference.id}_amplicon_{row.amplicon_number}" + "\n")
+            f.write(f">{reference.id}_amplicon_{row.amplicon_number}" + "_" + str(row.Index) + "\n")
             f.write(row.amplicon_sequence + "\n\n")
 
 
