@@ -6,30 +6,30 @@ ABUNDANCES = [i for i in open("/home/mahmadi/tb_seqs/seq_simulation/amplicon_rea
 #ISOLATES = [filename.replace(".fastq", "") for filename in ISOLATES]
 rule all:
     input:
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads.sam", isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads.bam", isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam", isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam.bai",  isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads.bam", isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}.vcf", isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/depths.tsv", isolate = ISOLATES, abundance = ABUNDANCES),
-        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}_freyja_demix_freschi", isolate = ISOLATES, abundance = ABUNDANCES)
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads.sam", isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads.bam", isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam", isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam.bai",  isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads.bam", isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}.vcf", isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/depths.tsv", isolate = ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}_freyja_demix_freschi", isolate = ISOLATES, abundance = ABUNDANCES)
 
 rule minimap2_sam:
     input:
         target="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta",  # can be either genome index or genome fasta
-        query="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/{isolate}/{abundance}/reads_1.fastq"
+        query="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/{abundance}/reads_1.fastq"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads.sam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads.sam"
     conda:
         "minimap"
     shell:
         """minimap2 -ax sr {input.target} {input.query} > {output} """
 rule sam2bam:
     input:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads.sam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads.sam"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads.bam"
     conda:
         "freyja"
     shell:
@@ -37,9 +37,9 @@ rule sam2bam:
 
 rule sort_bam:
     input:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads.bam"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam"
     conda:
         "freyja"
     shell:
@@ -47,40 +47,40 @@ rule sort_bam:
 
 rule index_bam:
     input:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam.bai"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam.bai"
     conda:
         "freyja"
     shell:
         """samtools index {input} """
 rule remove_adapters:
     input:
-        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam",
-        primer="/home/mahmadi/tb_seqs/primers/primer_v2.bed"
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/all_reads_sorted.bam",
+        primer="/home/mahmadi/tb_seqs/primers/primer_v3.bed"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads.bam"
     conda:
         "freyja"
     params:
-       pfx = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads"
+       pfx = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads"
     shell:
         """ivar trim -b {input.primer} -p {params.pfx} -i {input.bam_file} -q 15 -m 50 -s 4 -e"""
 rule sort_index:
     input:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads.bam"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads_sorted.bam"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads_sorted.bam"
     conda:
         "freyja"
     shell:
         """samtools sort -o {output} {input} && samtools index {output} """
 rule generate_depth:
     input:
-        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads_sorted.bam",
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads_sorted.bam",
         reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
     output:
-        depths="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/depths.tsv"
+        depths="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/depths.tsv"
     conda:
         "freyja"
     shell:
@@ -88,25 +88,26 @@ rule generate_depth:
 
 rule run_lofreq:
     input:
-        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/trimmed_all_reads_sorted.bam",
+        bam_file="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/trimmed_all_reads_sorted.bam",
         reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}.vcf"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}.vcf"
     conda:
         "lofreq"
     shell:
         """lofreq call -f {input.reference} -a 1 -b 1 -o {output} {input.bam_file}"""
 rule run_demix:
     input:
-        variants="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}.vcf",
-        depths="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/depths.tsv",
-        barcodes="/home/mahmadi/tb_seqs/lineage_barcodes/freschi_hier_binary_matrix.csv"
+        variants="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}.vcf",
+        depths="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/depths.tsv",
+        barcodes="/home/mahmadi/tb_seqs/lineage_barcodes/freschi_hier_binary_matrix.csv",
+        lineage="/home/mahmadi/tb_seqs/lineage_barcodes/lineages.yml"
     output:
-        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}_freyja_demix_freschi"
+        "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/{isolate}/{abundance}/{isolate}_{abundance}_freyja_demix_freschi"
     conda:
         "freyja"
     shell:
-        """freyja demix {input.variants} {input.depths} --output {output} --barcodes {input.barcodes}"""
+        """freyja demix {input.variants} {input.depths} --output {output} --barcodes {input.barcodes} --lineageyml {input.lineage} """
 
 
 
