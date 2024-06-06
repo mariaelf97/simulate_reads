@@ -1,0 +1,119 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/reads/isolates.txt").read().split('\n') if len(i) >0]
+
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/all_reads.sam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/all_reads.bam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam.bai",  isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/{isolate}.vcf", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/depths.tsv", isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/reads/{isolate}/{isolate}_freyja_demix_freschi", isolate = ISOLATES)
+
+rule minimap2_sam:
+    input:
+        target="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta",  # can be either genome index or genome fasta
+        query="/home/mahmadi/tb_seqs/reads/{isolate}/{isolate}.fastq"
+    output:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads.sam"
+    conda:
+        "minimap"
+    shell:
+        """minimap2 -ax sr {input.target} {input.query} > {output} """
+rule sam2bam:
+    input:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads.sam"
+    output:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools view -bS {input} > {output} """
+
+rule sort_bam:
+    input:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads.bam"
+    output:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam"
+    conda:
+        "freyja"
+    shell:
+        """samtools sort -o {output} {input} """
+
+rule index_bam:
+    input:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam"
+    output:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam.bai"
+    conda:
+        "freyja"
+    shell:
+        """samtools index {input} """
+rule generate_depth:
+    input:
+        bam_file="/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam",
+        reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
+    output:
+        depths="/home/mahmadi/tb_seqs/reads/{isolate}/depths.tsv"
+    conda:
+        "freyja"
+    shell:
+        """ samtools mpileup -aa -A -d 600000 -Q 20 -q 0 -B -f {input.reference} {input.bam_file} | cut -f1-4 > {output}"""
+
+rule run_lofreq:
+    input:
+        bam_file="/home/mahmadi/tb_seqs/reads/{isolate}/all_reads_sorted.bam",
+        reference="/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
+    output:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/{isolate}.vcf"
+    conda:
+        "lofreq"
+    shell:
+        """lofreq call -f {input.reference} -a 1 -b 1 -o {output} {input.bam_file}"""
+rule run_demix:
+    input:
+        variants="/home/mahmadi/tb_seqs/reads/{isolate}/{isolate}.vcf",
+        depths="/home/mahmadi/tb_seqs/reads/{isolate}/depths.tsv",
+        barcodes="/home/mahmadi/tb_seqs/lineage_barcodes/freschi_hier_binary_matrix.csv"
+    output:
+        "/home/mahmadi/tb_seqs/reads/{isolate}/{isolate}_freyja_demix_freschi"
+    conda:
+        "freyja"
+    shell:
+        """freyja demix {input.variants} {input.depths} --output {output} --barcodes {input.barcodes}"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
