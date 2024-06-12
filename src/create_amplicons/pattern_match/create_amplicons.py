@@ -53,7 +53,7 @@ def main():
     args = parser.parse_args()
     reference = next(SeqIO.parse(args.genome_path, "fasta"))
     reference_seq = str(reference.seq)
-    col_names = ["ref","start", "end", "left_right", "chr","strand", "primer_seq"]
+    col_names = ["ref","start", "end", "left_right", "primer_pool","strand", "primer_seq"]
     primer_bed = pd.read_csv(args.primers_file, sep= "\t", names=col_names)
     primer_bed["amplicon_number"] = primer_bed["left_right"].str.split('_').str[1]
     df = pd.merge(
@@ -85,7 +85,7 @@ def main():
             )
 
             d = pd.concat([d, temp])
-    all_amplicons = pd.merge(d, merged_df[["amplicon_number","primer_seq_y"]], how='outer', sort=False, on='amplicon_number')
+    all_amplicons = pd.merge(d, merged_df[["amplicon_number","primer_seq_x","primer_seq_y"]], how='outer', sort=False, on='amplicon_number')
     all_amplicons = all_amplicons.fillna(0)
 
 
