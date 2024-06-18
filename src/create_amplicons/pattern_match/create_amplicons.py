@@ -23,6 +23,15 @@ def find_closest_match(pattern,reference_seq):
     else:
         return matches
 
+def make_amplicon(left_primer_loc,right_primer_loc,
+                  primer_seq_y, reference):
+    """function to create amplicons based on the string match location"""
+    if math.isnan(left_primer_loc) or math.isnan(right_primer_loc):
+        amplicon = ""
+        return amplicon
+    else:
+        amplicon = reference[int(left_primer_loc - 1): int(right_primer_loc + len(primer_seq_y))]
+        return amplicon
 
 def evaluate_matches(left_primer_coordinates, right_primer_coordinates):
     """function to evaluate which coordinates found for each primer makes a valid amplicon"""
