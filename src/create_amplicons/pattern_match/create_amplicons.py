@@ -11,21 +11,17 @@ import argparse
 
 
 def find_closest_match(pattern,reference_seq):
-    """function to find a string allowing up to 3 mismatches"""
+    """function to find a string allowing up to 1 mismatches"""
     matches = [m.start() for m in regex.finditer(r"\L<primer_string>{s<1}",
                                 reference_seq, primer_string=[pattern])]
-    return matches
-
-
-def make_amplicon(left_primer_loc,right_primer_loc,
-                  primer_seq_y, reference):
-    """function to create amplicons based on the string match location"""
-    if math.isnan(left_primer_loc) or math.isnan(right_primer_loc):
-        amplicon = ""
-        return amplicon
+    # if the primer not found, try finding it in the complimentary reverse strand
+    if len(matches) == 0:
+        reference_seq = str(Seq(reference_seq).reverse_complement())
+        matches = [m.start() for m in regex.finditer(r"\L<primer_string>{s<1}",
+                                                     reference_seq, primer_string=[pattern])]
+        return matches
     else:
-        amplicon = reference[int(left_primer_loc - 1): int(right_primer_loc + len(primer_seq_y))]
-        return amplicon
+        return matches
 
 
 def evaluate_matches(left_primer_coordinates, right_primer_coordinates):
@@ -51,11 +47,17 @@ def main():
     parser.add_argument("--primers_file", "-p", help="Path to primer bed file")
 
     args = parser.parse_args()
+    # the sequence used to create amplicons
     reference = next(SeqIO.parse(args.genome_path, "fasta"))
+    # convert Seq object to str
     reference_seq = str(reference.seq)
+    # define column names to read primers bed file
     col_names = ["ref","start", "end", "left_right", "primer_pool","strand", "primer_seq"]
+    # read the primer bed file
     primer_bed = pd.read_csv(args.primers_file, sep= "\t", names=col_names)
+    # split the amplicon name into number and left/right
     primer_bed["amplicon_number"] = primer_bed["left_right"].str.split('_').str[1]
+    # merge the df with itself to have right and left primer on one row
     df = pd.merge(
         primer_bed.loc[primer_bed["left_right"].str.contains("LEFT")],
         primer_bed.loc[primer_bed["left_right"].str.contains("RIGHT")],
@@ -63,9 +65,12 @@ def main():
     )
     # select needed columns
     merged_df = df[["amplicon_number","primer_seq_x","primer_seq_y"]]
+    # get complementary reverse sequence of the right primer
     merged_df["comp_rev"] = merged_df.apply(lambda row: Seq(row['primer_seq_y']).reverse_complement(), axis=1)
+    # find the left and right primer
     merged_df["left_primer_loc"] = merged_df.apply(lambda row: find_closest_match(row["primer_seq_x"],reference_seq), axis=1)
     merged_df["right_primer_loc"] = merged_df.apply(lambda row: find_closest_match(str(row["comp_rev"]),reference_seq), axis=1)
+    # create df with all the valid amplicon coordinates
     merged_df["valid_combinations"] = ""
     d = pd.DataFrame()
     for i in range(len(merged_df)):
@@ -88,11 +93,11 @@ def main():
     all_amplicons = pd.merge(d, merged_df[["amplicon_number","primer_seq_x","primer_seq_y"]], how='outer', sort=False, on='amplicon_number')
     all_amplicons = all_amplicons.fillna(0)
 
-
     #all_amplicons.to_csv(args.output, index=False)
     all_amplicons["amplicon_sequence"] = all_amplicons.apply(lambda row: make_amplicon(row["primer_start"],
                                                                           row["primer_end"],
                                                                           row["primer_seq_y"],reference_seq), axis=1)
+    # write amplicons
     for row in all_amplicons.itertuples():
         if not os.path.exists(args.output):
             os.makedirs(args.output)
