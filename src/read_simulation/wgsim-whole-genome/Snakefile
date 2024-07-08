@@ -1,0 +1,30 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/isolates.txt").read().split('\n') if len(i) >0]
+ABUNDANCES = [i for i in open("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/abundances.txt").read().split('\n') if len(i) >0]
+
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/whole_genome/{abundance}/reads_1.fastq", isolate= ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/whole_genome/{abundance}/reads_2.fastq", isolate= ISOLATES, abundance = ABUNDANCES),
+        expand("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/whole_genome/{abundance}/tb-profiler",isolate= ISOLATES, abundance = ABUNDANCES)
+
+
+rule simulate_reads:
+    input:
+        "/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/{isolate}/{isolate}.fna",
+    output:
+       output1="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/whole_genome/{abundance}/reads_1.fastq",
+       output2="/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/whole_genome/{abundance}/reads_2.fastq"
+    conda:
+        "wgsim"
+    shell:
+        """wgsim -1 250 -2 250 -r 0.00001 -d 100 -R 0.00001 -X 0 -e 0.00001 -S 100 -N {wildcards.abundance} {input} {output.output1} {output.output2}"""
+rule tbprofiler:
+    input:
+        reads1 = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/{abundance}/reads_1.fastq",
+        reads2 = "/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/{abundance}/reads_2.fastq"
+    output:
+        directory("/home/mahmadi/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/{isolate}/whole_genome/{abundance}/tb-profiler")
+    conda:
+        "tb-profiler"
+    shell:
+        """mkdir -p {output} && cd {output} && tb-profiler profile --read1 {input.reads1} --read2 {input.reads2}"""
