@@ -1,0 +1,30 @@
+ISOLATES = [i for i in open("/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/isolates.txt").read().split('\n') if len(i) >0]
+
+rule all:
+    input:
+        expand("/home/mahmadi/tb_seqs/structural-variants/syri/{isolate}/{isolate}.sam",isolate = ISOLATES),
+        expand("/home/mahmadi/tb_seqs/structural-variants/syri/{isolate}/syri.out",isolate = ISOLATES)
+rule run_minimap:
+    input:
+        query = "/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/{isolate}/{isolate}.fna",
+        ref = "/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta"
+    output:
+        "/home/mahmadi/tb_seqs/structural-variants/syri/{isolate}/{isolate}.sam"
+    conda:
+        "minimap"
+    shell:
+        """minimap2 -ax asm5 --eqx {input.ref} {input.query} > {output}"""
+
+rule run_syri:
+    input:
+        alignment = "/home/mahmadi/tb_seqs/structural-variants/syri/{isolate}/{isolate}.sam",
+        ref = "/home/mahmadi/tb_seqs/H37Rv/H37Rv.fasta",
+        query = "/home/mahmadi/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/{isolate}/{isolate}.fna"
+    params:
+        "/home/mahmadi/tb_seqs/structural-variants/syri/{isolate}"
+    output:
+        "/home/mahmadi/tb_seqs/structural-variants/syri/{isolate}/syri.out"
+    conda:
+        "syri"
+    shell:
+        """cd {params} && syri -c {input.alignment} -r {input.ref} -q {input.query} -k -F S"""
