@@ -1,8 +1,44 @@
 library(tidyverse)
 library(data.table)
+library(rjson)
+
+# read tbprofiler json file
+read_tbprofiler_json <- function(isolate){
+  tb_profiler_json <- fromJSON(file = paste("mnt/tb_seqs/seq_simulation/",
+                                            "amplicon_read_simulations/string_match_wgsim/",
+                                            "primer_v3/pure_samples/",
+                                            isolate,"/reverse_complement/25000/",
+                                            "tb-profiler/results/tbprofiler.results.json",
+                                            sep = ""))
+  if(length(tb_profiler_json$lineage) >0)
+  {tb_profiler_df <- as.data.frame(tb_profiler_json$lineage)
+  tb_profiler_df$isolate <- isolate 
+  tb_profiler_df <- tb_profiler_df %>% select(lineage,support.target_allele_percent)
+  return(tb_profiler_df)}
+
+}
+read_tbprofiler_json_wgs <- function(isolate){
+  tb_profiler_json <- fromJSON(file = paste("mnt/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/",isolate,
+                                            "/whole_genome/25000/tb-profiler/results/tbprofiler.results.json",
+                                            sep = ""))
+  if(length(tb_profiler_json$lineage) >0)
+  {tb_profiler_df <- as.data.frame(tb_profiler_json$lineage)
+  tb_profiler_df$isolate <- isolate 
+  tb_profiler_df <- tb_profiler_df %>% select(lineage,support.target_allele_percent)
+  return(tb_profiler_df)}
+  
+}
+isolate <- fread("mnt/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/isolates.txt", header = FALSE)
+json_files <- mapply(read_tbprofiler_json, isolate$V1, SIMPLIFY = FALSE)
+json_files_unzipped <- do.call(rbind, json_files)
+json_files_unzipped$isolate <- rownames(json_files_unzipped)
+
+json_files_wgs <- mapply(read_tbprofiler_json_wgs, isolate$V1, SIMPLIFY = FALSE)
+json_files_unzipped_wgs <- do.call(rbind, json_files_wgs)
+json_files_unzipped_wgs$isolate <- rownames(json_files_unzipped_wgs)
 
 
-results<-read.table("mnt/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v2/pure_samples/aggregated_result.tsv", fill = TRUE, sep = "\t", h=T)
+results<-read.table("mnt/tb_seqs/seq_simulation/amplicon_read_simulations/string_match_wgsim/primer_v3/pure_samples/aggregated_result.tsv", fill = TRUE, sep = "\t", h=T)
 results<-as.data.frame(sapply(results, function(x) str_replace_all(x, "[',()\\]\\[]", ""))) # Removed the unwanted character: [], () and commas
 results<-as.data.frame(sapply(results, function(x) trimws(gsub("\\s+", " ", x)))) # Removed double spaces
 
@@ -31,5 +67,10 @@ results_comb_names <- results_comb_names %>% mutate(exp_abun = 1) %>%
   mutate(obs_abun = round(as.numeric(obs_abun),2))
 
 results_comb_names <- results_comb_names %>% mutate(exp_lin = paste("lineage",exp_lin,sep = ""))
-summary(results_comb_names)
-results_comb_names %>% write_csv("mnt/tb_seqs/seq_simulation/amplicon_read_simulations/amplicon_alignment_wgsim/primer_v2/pure_samples/demix_output_eval.csv")
+results_merged <- results_comb_names %>% full_join(json_files_unzipped, by = "isolate")%>%
+  full_join(json_files_unzipped_wgs, by = "isolate")
+colnames(results_merged) <- c("isolate","tb_profiler_exp_lin_whole_genome","freyja_obs_lin","read_cnt",
+                              "freyja_obs_abun","exp_abun","residual","tb_profiler_amplicon_lineage",
+                              "tb_profiler_amplicon_abun","tb_profiler_wgs_lineage",
+                              "tb_profiler_wgs_abun")
+results_merged %>% write_csv("Downloads/demix_eval_rev.csv")
