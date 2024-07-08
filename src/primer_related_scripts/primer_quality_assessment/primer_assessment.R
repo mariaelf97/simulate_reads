@@ -14,6 +14,40 @@ lineages <- fread("mnt/tb_seqs/assemblies/long_read_assemblies/pacbio-RSII/linea
 # read amplicon length files
 variant_files <- mapply(read_variant_files, isolate$V1, SIMPLIFY = FALSE)
 variant_files_unzipped <- do.call(rbind, variant_files)
+primer_24 <- variant_files_unzipped %>% filter(amplicon_number == 24)
+# import primer locations in H37Rv
+primer_file_H37Rv <- fread("mnt/tb_seqs/primers/primer_v3.bed")
+colnames(primer_file_H37Rv) <- c("chr","start","end","name","pool","strand","seq")
+# divide amplicon name to name, number and side (e.g. left or right)
+primer_file_H37Rv <- primer_file_H37Rv %>%
+  separate(name, into = c("name","number","side"))
+# remove repeated name variable not needed
+primer_file_H37Rv$name <- NULL
+
+primer_file_H37Rv$name <- "H37Rv_primer_loc"
+H37Rv_24 <- primer_file_H37Rv%>% filter(number =="24")
+ggplot() +
+  geom_dumbbell(primer_24,
+                mapping = aes(
+                  x = primer_start,
+                  xend = primer_end,
+                  y = isolate
+                ),
+                colour = "pink",
+                colour_xend = "#049000",
+                size = 0.9
+  )+   geom_dumbbell(H37Rv_24,
+                     mapping = aes(
+                       x = start,
+                       xend = end,
+                       y= name
+                     ),
+                     colour = "yellow",
+                     colour_xend = "red",
+                     size = 0.8
+  )+
+  
+  theme_minimal()
 # find primers with more than one match
   variant_files_unzipped %>% group_by(isolate,amplicon_number)%>%
     mutate(counts=n()) %>% view()
