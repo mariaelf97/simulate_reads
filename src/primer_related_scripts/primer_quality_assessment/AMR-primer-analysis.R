@@ -43,7 +43,7 @@ variant_per_position <- aggregate(variant.y ~ position.x, interval_joins, list)
 final_df <- tb_profiler_barcodes %>% inner_join(variant_per_position, by= c("V2" = "position.x"))%>%
   inner_join(mutation_per_position, by= c("V2" = "position.x"))%>%rowwise() %>% 
   mutate(overlapping_variant_cnt = length(unlist(position.y))) %>% ungroup() 
-# For eacg lineage, keep only variants with the maximum number of variants covered in one amplicon
+# For each lineage, keep only variants with the maximum number of variants covered in one amplicon
 max_overlaps <- final_df %>% group_by(V4) %>% mutate(max_cnt_per_lineage = max(overlapping_variant_cnt)) %>%
   filter(max_cnt_per_lineage == overlapping_variant_cnt) 
 # When subsampling, make sure we are not deleting any overlapping variants
@@ -64,10 +64,28 @@ colnames(all_variants_unzipped) <- c("interval_start","interval_end","lineage",
                                      "overlapping_variants","overlapping_variant_positions",
                                      "overlapping_variant_count")
 
+### Drug resistance ###
 # which drug resistance barcodes will we miss if we include counts higher than the median count value?
-who_2023_variants_joined%>% inner_join(interval_cnts, by=c("position"="position.x")) %>% 
-  group_by(gene)%>%summarise(mean_amplicon_number_covered = round(mean(cnt),2)) %>%view()
+final_AMR <- who_2023_variants_joined %>% distinct(position,.keep_all = TRUE) %>%
+  inner_join(variant_per_position, by= c("position" = "position.x"))%>%
+  inner_join(mutation_per_position, by= c("position" = "position.x"))%>%
+  rowwise() %>% 
+  mutate(overlapping_variant_cnt = length(unlist(position.y))) %>% 
+  ungroup() %>%
+  mutate(variant_size = abs(nchar(alternative_nucleotide) - nchar(reference_nucleotide)))%>%
+  mutate(interval_lower_bound = position, interval_upper_bound = position + 600)
+  
 
+final_AMR_grouped <-final_AMR %>% mutate(variant_type = case_when(
+  nchar(reference_nucleotide) == nchar(alternative_nucleotide) ~ "SNP",
+  nchar(reference_nucleotide) > nchar(alternative_nucleotide) ~ "deletion",
+  nchar(reference_nucleotide) < nchar(alternative_nucleotide) ~ "insertion"))
+
+final_AMR_grouped %>% filter(variant_size < 100) %>% 
+  group_by(drug,gene) %>% mutate(max_cnt_per_gene = max(overlapping_variant_cnt)) %>%
+  filter(max_cnt_per_gene == overlapping_variant_cnt) %>% view()
+
+binned_data <- bin_data(data.table(final_AMR), binCol="position", bins=unlist(bins[[1]])) 
 
 # gene names included in 600bps amplicon scheme by quick's lab
 deeplex_genes <- fread("mnt/tb_seqs/primers/tb-amr-panel/600/v1.0.0/work/freschi.gene.bed")
